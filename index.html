@@ -41,20 +41,25 @@ function weekStart(){
 
 // Sayfa yüklenince redirect sonucunu kontrol et
 getRedirectResult(auth).then(function(result){
-  if(result && result.user){
-    console.log('Redirect login OK:', result.user.displayName);
-  }
-}).catch(function(e){
-  console.log('Redirect error:', e.code);
-});
+  if(result && result.user) console.log('Redirect OK:', result.user.displayName);
+}).catch(function(e){ console.log('Redirect:', e.code); });
 
 window.fbLogin = async()=>{
   const btn=document.getElementById('loginBtn');
-  if(btn) btn.textContent='Yönlendiriliyor...';
+  if(btn) btn.textContent='Giriş yapılıyor...';
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   try {
-    await signInWithRedirect(auth, provider);
+    if(isMobile){
+      await signInWithRedirect(auth, provider);
+    } else {
+      await signInWithPopup(auth, provider);
+    }
   } catch(e){
-    if(btn){ btn.textContent='Hata: '+e.message; setTimeout(()=>{ btn.innerHTML='<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:22px;height:22px;margin-right:8px" alt="G">Google ile Giriş Yap'; },3000); }
+    if(e.code==='auth/popup-blocked'||e.code==='auth/popup-closed-by-user'){
+      await signInWithRedirect(auth, provider);
+    } else {
+      if(btn){ btn.textContent='Hata: '+e.message; setTimeout(()=>{ btn.innerHTML='<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:22px;height:22px;margin-right:8px" alt="G">Google ile Giriş Yap'; },3000); }
+    }
   }
 };
 
