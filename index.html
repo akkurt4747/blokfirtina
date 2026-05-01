@@ -545,8 +545,8 @@ let dragIdx=null, hoverR=null, hoverC=null, CS=0;
 let adsWatched=0;
 const MAX_ADS=3;
 
-const mc=document.getElementById('gc'), ctx=mc.getContext('2d',{alpha:false});
-const ghostEl=document.getElementById('ghost'), gctx=ghostEl.getContext('2d');
+const mc=document.getElementById('gc'), ctx=mc.getContext('2d',{alpha:false,desynchronized:true});
+const ghostEl=document.getElementById('ghost'), gctx=ghostEl.getContext('2d',{alpha:true,desynchronized:true});
 const pcs=[0,1,2].map(i=>document.getElementById('pc'+i).getContext('2d'));
 
 // ── INIT ───────────────────────────────────────────────────────
@@ -620,8 +620,10 @@ function blk(c,x,y,sz,col,alpha){
 
 function draw(){
   ctx.fillStyle='#060d1e'; ctx.fillRect(0,0,mc.width,mc.height);
+  // Grid arka planı tek seferde
+  ctx.fillStyle='#101e3a';
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    ctx.fillStyle='#101e3a'; rr(ctx,c*CS+2,r*CS+2,CS-4,CS-4,4); ctx.fill();
+    ctx.fillRect(c*CS+2,r*CS+2,CS-4,CS-4);
   }
   // Hover preview — sadece gerektiğinde
   if(dragIdx!==null && hoverR!==null && pieces[dragIdx] && !pieces[dragIdx].used){
@@ -737,7 +739,14 @@ function showMiniScore(text,col,row){
 }
 
 function checkEnd(){
-  if(pieces.every(p=>p.used)){ pieces=genPieces(); drawPieces(); }
+  if(pieces.every(p=>p.used)){
+    // Önce yeni parçaları getir
+    pieces=genPieces(); drawPieces();
+    // Yeni parçalar da sığmıyorsa game over
+    const ok=pieces.some(p=>{ if(p.used) return false; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(canPlace(p.shape,r,c)) return true; return false; });
+    if(!ok) triggerGameOver();
+    return;
+  }
   const ok=pieces.some(p=>{ if(p.used) return false; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(canPlace(p.shape,r,c)) return true; return false; });
   if(!ok) triggerGameOver();
 }
@@ -845,11 +854,8 @@ let _raf=null, _lx=0, _ly=0;
 document.addEventListener('touchmove',e=>{
   if(dragIdx===null) return; e.preventDefault();
   const t=e.touches[0];
-  const nx=t.clientX, ny=t.clientY;
-  // Ghost anında güncelle
-  posGhost(nx,ny);
-  _lx=nx; _ly=ny;
-  // Board sadece RAF ile — throttle
+  _lx=t.clientX; _ly=t.clientY;
+  posGhost(_lx,_ly);
   if(!_raf) _raf=requestAnimationFrame(()=>{
     calcHover(_lx,_ly,dragIdx);
     draw();
