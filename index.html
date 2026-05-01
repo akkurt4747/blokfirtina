@@ -545,8 +545,8 @@ let dragIdx=null, hoverR=null, hoverC=null, CS=0;
 let adsWatched=0;
 const MAX_ADS=3;
 
-const mc=document.getElementById('gc'), ctx=mc.getContext('2d',{alpha:false,desynchronized:true});
-const ghostEl=document.getElementById('ghost'), gctx=ghostEl.getContext('2d',{alpha:true,desynchronized:true});
+const mc=document.getElementById('gc'), ctx=mc.getContext('2d',{alpha:false});
+const ghostEl=document.getElementById('ghost'), gctx=ghostEl.getContext('2d');
 const pcs=[0,1,2].map(i=>document.getElementById('pc'+i).getContext('2d'));
 
 // ── INIT ───────────────────────────────────────────────────────
@@ -745,16 +745,19 @@ function showMiniScore(text,col,row){
 }
 
 function checkEnd(){
-  if(pieces.every(p=>p.used)){
-    // Önce yeni parçaları getir
-    pieces=genPieces(); drawPieces();
-    // Yeni parçalar da sığmıyorsa game over
-    const ok=pieces.some(p=>{ if(p.used) return false; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(canPlace(p.shape,r,c)) return true; return false; });
-    if(!ok) triggerGameOver();
-    return;
+  // Tüm parçalar kullanıldıysa yeni parçalar ver — game over kontrolü yapma
+  if(pieces.every(function(p){ return p.used; })){
+    pieces=genPieces(); 
+    drawPieces();
+    return; // Direkt devam et
   }
-  const ok=pieces.some(p=>{ if(p.used) return false; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(canPlace(p.shape,r,c)) return true; return false; });
-  if(!ok) triggerGameOver();
+  // Mevcut parçalardan hiçbiri sığmıyorsa game over
+  var canContinue=pieces.some(function(p){ 
+    if(p.used) return false; 
+    for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++) if(canPlace(p.shape,r,c)) return true; 
+    return false; 
+  });
+  if(!canContinue) triggerGameOver();
 }
 
 function triggerGameOver(){
