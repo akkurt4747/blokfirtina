@@ -39,17 +39,22 @@ function weekStart(){
   return Timestamp.fromDate(d);
 }
 
+// Sayfa yüklenince redirect sonucunu kontrol et
+getRedirectResult(auth).then(function(result){
+  if(result && result.user){
+    console.log('Redirect login OK:', result.user.displayName);
+  }
+}).catch(function(e){
+  console.log('Redirect error:', e.code);
+});
+
 window.fbLogin = async()=>{
   const btn=document.getElementById('loginBtn');
   if(btn) btn.textContent='Yönlendiriliyor...';
   try {
-    // Önce redirect sonucunu kontrol et (geri dönüşte)
-    const rr=await getRedirectResult(auth);
-    if(rr?.user) return;
-    // Her zaman redirect kullan — telefon ve APK'da kesin çalışır
-    await signInWithRedirect(auth,provider);
+    await signInWithRedirect(auth, provider);
   } catch(e){
-    if(btn){ btn.textContent='Hata: '+e.message; setTimeout(()=>btn.textContent='Google ile Giriş Yap',3000); }
+    if(btn){ btn.textContent='Hata: '+e.message; setTimeout(()=>{ btn.innerHTML='<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:22px;height:22px;margin-right:8px" alt="G">Google ile Giriş Yap'; },3000); }
   }
 };
 
@@ -111,31 +116,19 @@ window.fbGetMyUsername = async()=>{
   return snap.exists()?snap.data().username:null;
 };
 
-onAuthStateChanged(auth,async user=>{
+onAuthStateChanged(auth, function(user){
   window._user=user;
   if(user){
-    // Kullanıcı adı var mı kontrol et
-    const snap=await getDoc(doc(db,'users',user.uid));
-    if(snap.exists()&&snap.data().username){
-      // Kullanıcı adı var — direkt splash'e geç
-      window.playerName=snap.data().username;
-      document.getElementById('authScreen')?.classList.remove('active');
-      document.getElementById('usernameScreen')?.classList.remove('active');
-      document.getElementById('splash')?.classList.add('active');
-      const pt=document.getElementById('playerTag');
-      if(pt) pt.textContent='👤 '+window.playerName;
-    } else {
-      // Kullanıcı adı yok — seçim ekranına git
-      document.getElementById('authScreen')?.classList.remove('active');
-      document.getElementById('usernameScreen')?.classList.add('active');
-    }
+    window.playerName=user.displayName||'Oyuncu';
+    document.getElementById('authScreen')?.classList.remove('active');
+    document.getElementById('splash')?.classList.add('active');
+    var pt=document.getElementById('playerTag');
+    if(pt) pt.textContent='👤 '+window.playerName;
   } else {
     document.getElementById('authScreen')?.classList.add('active');
-    document.getElementById('usernameScreen')?.classList.remove('active');
     document.getElementById('splash')?.classList.remove('active');
   }
-});
-</script>
+});</script>
 
 <style>
 :root{
