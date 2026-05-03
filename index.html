@@ -537,6 +537,35 @@ function startCD(){
 // ── GAME CONSTANTS ─────────────────────────────────────────────
 const ROWS=8, COLS=8;
 const COLORS=['#ff4757','#ff6b35','#ffd32a','#2ed573','#1e90ff','#a55eea','#00d2d3','#ff6b9d','#26de81','#fd9644','#45aaf2','#fc5c65'];
+var _blkCache={};
+function getBlkCanvas(sz,col){
+  var k=sz+col;
+  if(_blkCache[k]) return _blkCache[k];
+  var bc=document.createElement('canvas');
+  bc.width=sz; bc.height=sz;
+  var bctx=bc.getContext('2d');
+  var p=1.5, rad=Math.max(4,sz*.18|0);
+  function rr(rx,ry,rw,rh){
+    bctx.beginPath();
+    bctx.moveTo(rx+rad,ry);
+    bctx.lineTo(rx+rw-rad,ry); bctx.arcTo(rx+rw,ry,rx+rw,ry+rad,rad);
+    bctx.lineTo(rx+rw,ry+rh-rad); bctx.arcTo(rx+rw,ry+rh,rx+rw-rad,ry+rh,rad);
+    bctx.lineTo(rx+rad,ry+rh); bctx.arcTo(rx,ry+rh,rx,ry+rh-rad,rad);
+    bctx.lineTo(rx,ry+rad); bctx.arcTo(rx,ry,rx+rad,ry,rad);
+    bctx.closePath();
+  }
+  bctx.globalAlpha=.25; bctx.fillStyle='#000';
+  rr(p+2,p+3,sz-p*2,sz-p*2); bctx.fill();
+  bctx.globalAlpha=1; bctx.fillStyle=sc(col,-45);
+  rr(p,p,sz-p*2,sz-p*2); bctx.fill();
+  bctx.fillStyle=col;
+  rr(p,p,sz-p*2,sz-p*2-3); bctx.fill();
+  bctx.globalAlpha=.32; bctx.fillStyle='#fff';
+  rr(p+2,p+2,sz-p*2-4,(sz*.3)|0); bctx.fill();
+  bctx.globalAlpha=1;
+  _blkCache[k]=bc;
+  return bc;
+}
 const SHAPES=[
   [[1,1],[1,1]],[[1],[1],[1]],[[1,1,1]],
   [[1,1,1],[0,0,1]],[[1,1,1],[1,0,0]],
@@ -571,7 +600,7 @@ function initGame(){
   const boardSize=Math.min(maxW, maxH, 520);
   CS=Math.max(28, Math.floor(boardSize/COLS));
   mc.width=CS*COLS; mc.height=CS*ROWS;
-  grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  grid=Array.from({length:ROWS},()=>Array(COLS).fill(null)); _blkCache={};
   score=0; combo=1; dragIdx=null; hoverR=null; hoverC=null;
   pieces=genPieces(); started=true;
   updUI(); draw(); drawPieces();
@@ -619,52 +648,25 @@ function rr(c,x,y,w,h,r){
   c.lineTo(x+r,y+h);c.arcTo(x,y+h,x,y+h-r,r);
   c.lineTo(x,y+r);c.arcTo(x,y,x+r,y,r);c.closePath();
 }
+var _scCache={};
 function sc(hex,a){
-  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
-  return 'rgb('+Math.max(0,Math.min(255,r+a))+','+Math.max(0,Math.min(255,g+a))+','+Math.max(0,Math.min(255,b+a))+')';;
+  var k=hex+a; if(_scCache[k]) return _scCache[k];
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  var result='rgb('+Math.max(0,Math.min(255,r+a))+','+Math.max(0,Math.min(255,g+a))+','+Math.max(0,Math.min(255,b+a))+')';
+  _scCache[k]=result; return result;
 }
 function blk(c,x,y,sz,col,alpha){
   alpha=alpha==null?1:alpha;
-  var p=1.5, rad=Math.max(4,Math.floor(sz*.2));
-
-  function rrect(rx,ry,rw,rh,rr){
-    c.beginPath();
-    c.moveTo(rx+rr,ry);
-    c.lineTo(rx+rw-rr,ry);
-    c.arcTo(rx+rw,ry,rx+rw,ry+rr,rr);
-    c.lineTo(rx+rw,ry+rh-rr);
-    c.arcTo(rx+rw,ry+rh,rx+rw-rr,ry+rh,rr);
-    c.lineTo(rx+rr,ry+rh);
-    c.arcTo(rx,ry+rh,rx,ry+rh-rr,rr);
-    c.lineTo(rx,ry+rr);
-    c.arcTo(rx,ry,rx+rr,ry,rr);
-    c.closePath();
-  }
-
-  // Ana blok
+  var bc=getBlkCanvas(sz,col);
   c.globalAlpha=alpha;
-  c.fillStyle=col;
-  rrect(x+p,y+p,sz-p*2,sz-p*2,rad);
-  c.fill();
-
-  // Alt koyu kenar (hafif derinlik)
-  c.globalAlpha=alpha*0.5;
-  c.fillStyle=sc(col,-45);
-  c.fillRect(x+p,y+sz-p-4,sz-p*2,4);
-
-  // Üst ince parlama
-  c.globalAlpha=alpha*0.35;
-  c.fillStyle='rgba(255,255,255,0.9)';
-  rrect(x+p+2,y+p+2,sz-p*2-4,Math.floor(sz*0.3),rad-1);
-  c.fill();
-
+  c.drawImage(bc,x,y);
   c.globalAlpha=1;
 }
 
 function draw(){
   ctx.fillStyle='#060d1e';
   ctx.fillRect(0,0,mc.width,mc.height);
-  var cs2=CS-4, cs1=CS-2;
+  var cs2=CS-4;
   ctx.fillStyle='#0d1a36';
   for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++) if(!grid[r][c]) ctx.fillRect(c*CS+2,r*CS+2,cs2,cs2);
   for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++) if(grid[r][c]) blk(ctx,c*CS,r*CS,CS,grid[r][c]);
@@ -674,7 +676,7 @@ function draw(){
       if(!v)return;
       var r2=hoverR+dr,c2=hoverC+dc;
       if(r2>=0&&r2<ROWS&&c2>=0&&c2<COLS){
-        ctx.globalAlpha=ok?0.5:0.18;
+        ctx.globalAlpha=ok?0.55:0.2;
         ctx.fillStyle=ok?p.color:'#555';
         ctx.fillRect(c2*CS+2,r2*CS+2,cs2,cs2);
         ctx.globalAlpha=1;
@@ -682,6 +684,7 @@ function draw(){
     });});
   }
 }
+
 
 function drawPieces(){
   [0,1,2].forEach(i=>{
@@ -998,6 +1001,7 @@ let _raf=null, _lx=0, _ly=0;
   pw.addEventListener('mousedown',e=>{ e.preventDefault(); startDrag(e.clientX,e.clientY); });
 });
 
+var _prevR=null,_prevC=null;
 document.addEventListener('touchmove',e=>{
   if(dragIdx===null) return;
   e.preventDefault();
@@ -1005,7 +1009,11 @@ document.addEventListener('touchmove',e=>{
   _lx=t.clientX; _ly=t.clientY;
   posGhost(_lx,_ly);
   calcHover(_lx,_ly,dragIdx);
-  draw();
+  // Sadece hover değiştiyse draw et
+  if(hoverR!==_prevR||hoverC!==_prevC){
+    _prevR=hoverR; _prevC=hoverC;
+    draw();
+  }
 },{passive:false});
 
 document.addEventListener('touchend',e=>{
