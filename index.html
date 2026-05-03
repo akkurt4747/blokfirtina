@@ -212,7 +212,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);overflow:hidd
 .pw.dragging-src{opacity:.3;border-color:var(--blue);}
 .pw.used{opacity:.2;pointer-events:none;}
 .hint{height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#2a4870;}
-#ghost{position:fixed;pointer-events:none;z-index:9999;display:none;will-change:transform;top:0;left:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;contain:strict;}
+#ghost{position:fixed;pointer-events:none;z-index:9999;display:none;will-change:transform;top:0;left:0;transform:translateZ(0);-webkit-transform:translateZ(0);image-rendering:pixelated;}
 
 /* SETTINGS */
 #settingsModal{display:none;position:fixed;inset:0;background:rgba(5,10,25,.92);z-index:200;align-items:center;justify-content:center;}
@@ -625,87 +625,63 @@ function sc(hex,a){
 }
 function blk(c,x,y,sz,col,alpha){
   alpha=alpha==null?1:alpha;
-  var p=1.5, rad=Math.max(3,Math.floor(sz*.18));
+  var p=1.5, rad=Math.max(4,Math.floor(sz*.2));
 
-  function rrect(cx,cy,cw,ch,cr){
+  function rrect(rx,ry,rw,rh,rr){
     c.beginPath();
-    c.moveTo(cx+cr,cy);
-    c.lineTo(cx+cw-cr,cy);
-    c.arcTo(cx+cw,cy,cx+cw,cy+cr,cr);
-    c.lineTo(cx+cw,cy+ch-cr);
-    c.arcTo(cx+cw,cy+ch,cx+cw-cr,cy+ch,cr);
-    c.lineTo(cx+cr,cy+ch);
-    c.arcTo(cx,cy+ch,cx,cy+ch-cr,cr);
-    c.lineTo(cx,cy+cr);
-    c.arcTo(cx,cy,cx+cr,cy,cr);
+    c.moveTo(rx+rr,ry);
+    c.lineTo(rx+rw-rr,ry);
+    c.arcTo(rx+rw,ry,rx+rw,ry+rr,rr);
+    c.lineTo(rx+rw,ry+rh-rr);
+    c.arcTo(rx+rw,ry+rh,rx+rw-rr,ry+rh,rr);
+    c.lineTo(rx+rr,ry+rh);
+    c.arcTo(rx,ry+rh,rx,ry+rh-rr,rr);
+    c.lineTo(rx,ry+rr);
+    c.arcTo(rx,ry,rx+rr,ry,rr);
     c.closePath();
   }
 
-  // Gölge
-  c.globalAlpha=alpha*0.3;
-  c.fillStyle='rgba(0,0,0,0.7)';
-  rrect(x+p+2,y+p+3,sz-p*2,sz-p*2,rad);
-  c.fill();
-
-  // Alt koyu kenar
+  // Ana blok
   c.globalAlpha=alpha;
-  c.fillStyle=sc(col,-55);
+  c.fillStyle=col;
   rrect(x+p,y+p,sz-p*2,sz-p*2,rad);
   c.fill();
 
-  // Ana yüzey
-  c.fillStyle=col;
-  rrect(x+p,y+p,sz-p*2,sz-p*2-3,rad);
-  c.fill();
+  // Alt koyu kenar (hafif derinlik)
+  c.globalAlpha=alpha*0.5;
+  c.fillStyle=sc(col,-45);
+  c.fillRect(x+p,y+sz-p-4,sz-p*2,4);
 
-  // Üst parlama
-  c.globalAlpha=alpha*0.4;
-  c.fillStyle=sc(col,60);
-  rrect(x+p+1,y+p+1,sz-p*2-2,Math.floor((sz-p*2)*0.4),rad);
+  // Üst ince parlama
+  c.globalAlpha=alpha*0.35;
+  c.fillStyle='rgba(255,255,255,0.9)';
+  rrect(x+p+2,y+p+2,sz-p*2-4,Math.floor(sz*0.3),rad-1);
   c.fill();
 
   c.globalAlpha=1;
 }
 
-
 function draw(){
-  // Arka plan
   ctx.fillStyle='#060d1e';
   ctx.fillRect(0,0,mc.width,mc.height);
-  
-  // Izgara + bloklar tek geçişte
-  var cs2=CS-4;
-  for(var r=0;r<ROWS;r++){
-    for(var c=0;c<COLS;c++){
-      if(grid[r][c]){
-        blk(ctx,c*CS,r*CS,CS,grid[r][c]);
-      } else {
-        ctx.fillStyle='#0d1a36';
-        ctx.fillRect(c*CS+2,r*CS+2,cs2,cs2);
+  var cs2=CS-4, cs1=CS-2;
+  ctx.fillStyle='#0d1a36';
+  for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++) if(!grid[r][c]) ctx.fillRect(c*CS+2,r*CS+2,cs2,cs2);
+  for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++) if(grid[r][c]) blk(ctx,c*CS,r*CS,CS,grid[r][c]);
+  if(dragIdx!==null&&hoverR!==null&&pieces[dragIdx]&&!pieces[dragIdx].used){
+    var p=pieces[dragIdx],ok=canPlace(p.shape,hoverR,hoverC);
+    p.shape.forEach(function(row,dr){row.forEach(function(v,dc){
+      if(!v)return;
+      var r2=hoverR+dr,c2=hoverC+dc;
+      if(r2>=0&&r2<ROWS&&c2>=0&&c2<COLS){
+        ctx.globalAlpha=ok?0.5:0.18;
+        ctx.fillStyle=ok?p.color:'#555';
+        ctx.fillRect(c2*CS+2,r2*CS+2,cs2,cs2);
+        ctx.globalAlpha=1;
       }
-    }
-  }
-
-  // Hover - sadece sığıyorsa göster
-  if(dragIdx!==null && hoverR!==null && pieces[dragIdx] && !pieces[dragIdx].used){
-    var p=pieces[dragIdx];
-    var ok=canPlace(p.shape,hoverR,hoverC);
-    var sh=p.shape;
-    for(var dr=0;dr<sh.length;dr++){
-      for(var dc=0;dc<sh[dr].length;dc++){
-        if(!sh[dr][dc]) continue;
-        var r2=hoverR+dr, c2=hoverC+dc;
-        if(r2>=0&&r2<ROWS&&c2>=0&&c2<COLS){
-          ctx.globalAlpha=ok?0.55:0.2;
-          ctx.fillStyle=ok?p.color:'#666';
-          ctx.fillRect(c2*CS+2,r2*CS+2,cs2,cs2);
-          ctx.globalAlpha=1;
-        }
-      }
-    }
+    });});
   }
 }
-
 
 function drawPieces(){
   [0,1,2].forEach(i=>{
@@ -737,13 +713,13 @@ function renderGhost(idx){
 
 function posGhost(cx,cy){
   ghostEl.style.display='block';
-  var gw=ghostEl.offsetWidth||CS*2;
-  var gh=ghostEl.offsetHeight||CS*2;
-  var gx=(cx-gw/2)|0;
-  var gy=(cy-gh-20)|0;  // Parmağın 20px üstünde
-  ghostEl.style.transform='translate3d('+gx+'px,'+gy+'px,0)';
-  ghostEl.style.webkitTransform='translate3d('+gx+'px,'+gy+'px,0)';
+  var gx=(cx-(ghostEl.offsetWidth>>1))|0;
+  var gy=(cy-ghostEl.offsetHeight-16)|0;
+  var t='translate3d('+gx+'px,'+gy+'px,0)';
+  ghostEl.style.transform=t;
+  ghostEl.style.webkitTransform=t;
 }
+
 function hideGhost(){ ghostEl.style.display='none'; }
 
 function calcHover(cx,cy,idx){
@@ -1029,10 +1005,7 @@ document.addEventListener('touchmove',e=>{
   _lx=t.clientX; _ly=t.clientY;
   posGhost(_lx,_ly);
   calcHover(_lx,_ly,dragIdx);
-  if(!_raf) _raf=requestAnimationFrame(function(){
-    draw();
-    _raf=null;
-  });
+  draw();
 },{passive:false});
 
 document.addEventListener('touchend',e=>{
