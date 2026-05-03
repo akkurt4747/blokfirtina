@@ -191,27 +191,27 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);overflow:hidd
 
 /* GAME */
 #game{background:radial-gradient(ellipse at 50% -10%,#1a3070,#0a1428 65%);justify-content:flex-start;overflow:hidden;}
-.g-top{width:100%;padding:clamp(4px,1.5vw,8px) 12px clamp(4px,1.5vw,6px);display:flex;justify-content:space-between;align-items:center;background:rgba(6,13,30,.6);border-bottom:1px solid #1a2f58;}
+.g-top{width:100%;padding:4px 10px 4px;display:flex;justify-content:space-between;align-items:center;background:rgba(6,13,30,.6);border-bottom:1px solid #1a2f58;}
 .stat{text-align:center;background:rgba(26,47,88,.7);border-radius:10px;padding:5px 12px;border:1px solid #1e3a6e;}
-.stat .sv{font-size:clamp(16px,5vw,22px);font-weight:900;color:#fff;line-height:1;letter-spacing:-.5px;}
+.stat .sv{font-size:clamp(14px,4.5vw,20px);font-weight:900;color:#fff;line-height:1;letter-spacing:-.5px;}
 .stat .sl{font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:2px;font-weight:700;}
-.stat.main-score .sv{font-size:clamp(20px,6vw,28px);color:var(--gold);text-shadow:0 0 20px rgba(245,200,66,.4);}
+.stat.main-score .sv{font-size:clamp(18px,5.5vw,24px);color:var(--gold);text-shadow:0 0 20px rgba(245,200,66,.4);}
 .stat.main-score{border-color:#3a8ef6;}
 .stat.cx .sv{color:var(--gold);}
 .g-btns{display:flex;gap:6px;}
 .icon-btn{width:34px;height:34px;border-radius:50%;background:var(--bg2);border:none;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .icon-btn:active{background:var(--bg3);}
-.ad-strip{width:100%;background:#080f20;border-bottom:1px solid #1a2f58;padding:4px 14px;}
+.ad-strip{width:100%;background:#080f20;border-bottom:1px solid #1a2f58;padding:2px 10px;}
 .ad-inner{background:#0f1a34;border-radius:6px;padding:4px 10px;font-size:10px;color:#2a4070;display:flex;align-items:center;gap:6px;}
 .ad-tag{background:#1a2f58;color:var(--muted);font-size:8px;padding:2px 5px;border-radius:3px;letter-spacing:1px;}
-.board-wrap{display:flex;justify-content:center;align-items:center;padding:4px 4px 0;position:relative;flex-shrink:0;}
+.board-wrap{display:flex;justify-content:center;align-items:center;padding:2px 4px 0;position:relative;flex-shrink:0;}
 #gc{border-radius:10px;display:block;touch-action:none;}
 #clearAnim{position:absolute;top:6px;left:8px;pointer-events:none;}
-.pieces-row{display:flex;justify-content:center;gap:clamp(6px,2vw,12px);padding:6px 8px 2px;align-items:flex-end;}
-.pw{width:clamp(68px,22vw,88px);height:clamp(68px,22vw,88px);background:var(--bg2);border-radius:14px;border:1.5px solid var(--bg3);display:flex;align-items:center;justify-content:center;cursor:grab;position:relative;flex-shrink:0;touch-action:none;-webkit-user-select:none;user-select:none;will-change:auto;-webkit-tap-highlight-color:transparent;}
+.pieces-row{display:flex;justify-content:center;gap:clamp(4px,2vw,10px);padding:4px 8px 2px;align-items:flex-end;}
+.pw{width:clamp(76px,25vw,96px);height:clamp(76px,25vw,96px);background:var(--bg2);border-radius:14px;border:1.5px solid var(--bg3);display:flex;align-items:center;justify-content:center;cursor:grab;position:relative;flex-shrink:0;touch-action:none;-webkit-user-select:none;user-select:none;will-change:auto;-webkit-tap-highlight-color:transparent;}
 .pw.dragging-src{opacity:.3;border-color:var(--blue);}
 .pw.used{opacity:.2;pointer-events:none;}
-.hint{height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#2a4870;}
+.hint{height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#2a4870;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
 #ghost{position:fixed;pointer-events:none;z-index:9999;display:none;will-change:transform;top:0;left:0;transform:translateZ(0);-webkit-transform:translateZ(0);image-rendering:pixelated;}
 
 /* SETTINGS */
@@ -361,9 +361,9 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);overflow:hidd
     <div id="clearAnim"></div>
   </div>
   <div class="pieces-row">
-    <div class="pw" id="pw0"><canvas id="pc0" width="74" height="74"></canvas></div>
-    <div class="pw" id="pw1"><canvas id="pc1" width="74" height="74"></canvas></div>
-    <div class="pw" id="pw2"><canvas id="pc2" width="74" height="74"></canvas></div>
+    <div class="pw" id="pw0"><canvas id="pc0" width="90" height="90"></canvas></div>
+    <div class="pw" id="pw1"><canvas id="pc1" width="90" height="90"></canvas></div>
+    <div class="pw" id="pw2"><canvas id="pc2" width="90" height="90"></canvas></div>
   </div>
   <div class="hint" id="hint">Parçayı sürükle, tahtaya bırak</div>
 </div>
@@ -590,15 +590,12 @@ const pcs=[0,1,2].map(i=>document.getElementById('pc'+i).getContext('2d'));
 
 // ── INIT ───────────────────────────────────────────────────────
 function initGame(){
-  // Tüm ekran boyutlarına uyumlu hesaplama
-  const vw=window.innerWidth, vh=window.innerHeight;
-  // Üst bar + reklam + parça alanı + hint için alan bırak
-  const topBar=60, adBar=30, pieceArea=100, hint=24, padding=20;
-  const maxH=vh-topBar-adBar-pieceArea-hint-padding;
-  const maxW=vw-16;
-  // Kare tahta — en küçük boyutu kullan
-  const boardSize=Math.min(maxW, maxH, 520);
-  CS=Math.max(28, Math.floor(boardSize/COLS));
+  var vw=window.innerWidth, vh=window.innerHeight;
+  var topBar=54, adBar=26, pieceArea=88, hint=20, padding=10;
+  var availH=vh-topBar-adBar-pieceArea-hint-padding;
+  var availW=vw-10;
+  var boardSize=Math.min(availW, availH, 480);
+  CS=Math.max(30, Math.floor(boardSize/COLS));
   mc.width=CS*COLS; mc.height=CS*ROWS;
   grid=Array.from({length:ROWS},()=>Array(COLS).fill(null)); _blkCache={};
   score=0; combo=1; dragIdx=null; hoverR=null; hoverC=null;
@@ -667,24 +664,24 @@ function draw(){
   ctx.fillStyle='#060d1e';
   ctx.fillRect(0,0,mc.width,mc.height);
   var cs2=CS-4;
+  // Boş hücreleri tek renk tek seferde
   ctx.fillStyle='#0d1a36';
   for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++) if(!grid[r][c]) ctx.fillRect(c*CS+2,r*CS+2,cs2,cs2);
-  for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++) if(grid[r][c]) blk(ctx,c*CS,r*CS,CS,grid[r][c]);
+  // Dolu bloklar — önbellekten drawImage
+  for(var r=0;r<ROWS;r++) for(var c=0;c<COLS;c++) if(grid[r][c]) ctx.drawImage(getBlkCanvas(CS,grid[r][c]),c*CS,r*CS);
+  // Hover
   if(dragIdx!==null&&hoverR!==null&&pieces[dragIdx]&&!pieces[dragIdx].used){
     var p=pieces[dragIdx],ok=canPlace(p.shape,hoverR,hoverC);
-    p.shape.forEach(function(row,dr){row.forEach(function(v,dc){
-      if(!v)return;
+    ctx.fillStyle=ok?p.color:'#555';
+    ctx.globalAlpha=ok?0.5:0.18;
+    for(var dr=0;dr<p.shape.length;dr++) for(var dc=0;dc<p.shape[dr].length;dc++){
+      if(!p.shape[dr][dc]) continue;
       var r2=hoverR+dr,c2=hoverC+dc;
-      if(r2>=0&&r2<ROWS&&c2>=0&&c2<COLS){
-        ctx.globalAlpha=ok?0.55:0.2;
-        ctx.fillStyle=ok?p.color:'#555';
-        ctx.fillRect(c2*CS+2,r2*CS+2,cs2,cs2);
-        ctx.globalAlpha=1;
-      }
-    });});
+      if(r2>=0&&r2<ROWS&&c2>=0&&c2<COLS) ctx.fillRect(c2*CS+2,r2*CS+2,cs2,cs2);
+    }
+    ctx.globalAlpha=1;
   }
 }
-
 
 function drawPieces(){
   [0,1,2].forEach(i=>{
