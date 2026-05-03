@@ -208,11 +208,11 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);overflow:hidd
 #gc{border-radius:10px;display:block;touch-action:none;}
 #clearAnim{position:absolute;top:6px;left:8px;pointer-events:none;}
 .pieces-row{display:flex;justify-content:center;gap:clamp(6px,2vw,12px);padding:6px 8px 2px;align-items:flex-end;}
-.pw{width:clamp(68px,22vw,88px);height:clamp(68px,22vw,88px);background:var(--bg2);border-radius:14px;border:1.5px solid var(--bg3);display:flex;align-items:center;justify-content:center;cursor:grab;position:relative;flex-shrink:0;touch-action:none;transition:opacity .15s,border-color .15s;-webkit-user-select:none;user-select:none;will-change:transform;}
+.pw{width:clamp(68px,22vw,88px);height:clamp(68px,22vw,88px);background:var(--bg2);border-radius:14px;border:1.5px solid var(--bg3);display:flex;align-items:center;justify-content:center;cursor:grab;position:relative;flex-shrink:0;touch-action:none;-webkit-user-select:none;user-select:none;will-change:auto;-webkit-tap-highlight-color:transparent;}
 .pw.dragging-src{opacity:.3;border-color:var(--blue);}
 .pw.used{opacity:.2;pointer-events:none;}
 .hint{height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#2a4870;}
-#ghost{position:fixed;pointer-events:none;z-index:9999;display:none;will-change:transform;top:0;left:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:translateZ(0);-webkit-transform:translateZ(0);}
+#ghost{position:fixed;pointer-events:none;z-index:9999;display:none;will-change:transform;top:0;left:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;contain:strict;}
 
 /* SETTINGS */
 #settingsModal{display:none;position:fixed;inset:0;background:rgba(5,10,25,.92);z-index:200;align-items:center;justify-content:center;}
@@ -279,7 +279,12 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);overflow:hidd
       Google ile Giriş Yap
     </button>
     <div class="auth-note">Google hesabınla güvenli giriş.<br>Puanların haftalık sıralamaya kaydedilir.</div>
-    <button class="skip-btn" onclick="skipAuth()">→ Kayıt olmadan test et</button>
+    <div style="margin-top:16px;border-top:1px solid #1a2f58;padding-top:16px;">
+      <button onclick="skipAuth()" style="width:100%;padding:12px;border-radius:50px;background:transparent;border:1.5px solid #2a4a8a;color:#7aa0d8;font-size:14px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <span style="font-size:18px;">👤</span> Misafir olarak devam et
+      </button>
+      <div style="font-size:10px;color:#2a4070;margin-top:8px;text-align:center;">Puanların kaydedilmez • Lider tablosuna giremezsin</div>
+    </div>
     <div class="owner">Ömer Faruk Akkurt</div>
   </div>
 </div>
@@ -684,11 +689,10 @@ function posGhost(cx,cy){
   ghostEl.style.display='block';
   var gw=parseInt(ghostEl.style.width)||ghostEl.width;
   var gh=parseInt(ghostEl.style.height)||ghostEl.height;
-  var gx=Math.round(cx-gw/2);
-  var gy=Math.round(cy-gh/2-CS*0.7);
-  var t='translate3d('+gx+'px,'+gy+'px,0)';
-  ghostEl.style.transform=t;
-  ghostEl.style.webkitTransform=t;
+  var gx=(cx-gw/2)|0;
+  var gy=(cy-gh/2-CS*0.5)|0;
+  ghostEl.style.transform='translate3d('+gx+'px,'+gy+'px,0)';
+  ghostEl.style.webkitTransform='translate3d('+gx+'px,'+gy+'px,0)';
 }
 function hideGhost(){ ghostEl.style.display='none'; }
 
@@ -865,25 +869,33 @@ let _raf=null, _lx=0, _ly=0;
     draw(); sfx.select(); vib(10);
     document.getElementById('hint').textContent='Bırak!';
   }
-  pw.addEventListener('touchstart',e=>{ e.preventDefault(); e.stopPropagation(); const t=e.touches[0]; startDrag(t.clientX,t.clientY); },{passive:false});
+  pw.addEventListener('touchstart',e=>{ e.preventDefault(); var t=e.touches[0]; startDrag(t.clientX,t.clientY); },{passive:false,capture:true});
   pw.addEventListener('mousedown',e=>{ e.preventDefault(); startDrag(e.clientX,e.clientY); });
 });
 
 document.addEventListener('touchmove',e=>{
-  if(dragIdx===null) return; e.preventDefault();
-  const t=e.touches[0];
+  if(dragIdx===null) return;
+  e.preventDefault();
+  var t=e.touches[0];
   _lx=t.clientX; _ly=t.clientY;
+  // Ghost ve board tamamen senkron - RAF yok
   posGhost(_lx,_ly);
-  if(!_raf) _raf=requestAnimationFrame(()=>{
-    calcHover(_lx,_ly,dragIdx);
-    draw();
-    _raf=null;
-  });
+  calcHover(_lx,_ly,dragIdx);
+  draw();
 },{passive:false});
 
 document.addEventListener('touchend',e=>{
   if(dragIdx===null) return;
-  const t=e.changedTouches[0]; handleDrop(t.clientX,t.clientY);
+  e.preventDefault();
+  var t=e.changedTouches[0]||e.touches[0];
+  handleDrop(t.clientX,t.clientY);
+},{passive:false,capture:true});
+
+document.addEventListener('touchcancel',e=>{
+  if(dragIdx===null) return;
+  var idx2=dragIdx; dragIdx=null;
+  document.getElementById('pw'+idx2)?.classList.remove('dragging-src');
+  hoverR=null; hoverC=null; hideGhost(); draw();
 },{passive:false});
 
 document.addEventListener('touchcancel',()=>{
